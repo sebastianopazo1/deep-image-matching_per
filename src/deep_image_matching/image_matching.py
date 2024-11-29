@@ -18,6 +18,13 @@ from . import (
     logger,
     matchers,
 )
+from src.deep_image_matching.io.h5 import (
+    read_image,
+    get_features,
+    get_matches,
+    find_pair
+)
+
 from .extractors.extractor_base import extractor_loader
 from .extractors.superpoint import SuperPointExtractor
 from .io.h5 import get_features
@@ -442,6 +449,75 @@ class ImageMatching:
 
         return matches_path
 
+
+    """
+    def stitch_images(self, feature_path: Path, match_path: Path):
+        # Leer los matches del archivo h5
+        with h5py.File(str(match_path), 'r') as f:
+            pair_names = list(f.keys())
+            # Tomamos el primer par de imágenes
+            image1 = pair_names[0]  # '0003.jpg'
+            image2 = pair_names[1]  # '0004.jpg'
+            
+            # Use the proper pair finding logic from h5.py
+            pair_name, swap = find_pair(f, image1, image2)
+            matches = f[pair_name][()]  # Get matches using the correct pair name
+            
+            if swap:
+                # If images were swapped, we need to swap the matches accordingly
+                matches = matches[:, [1, 0]]
+
+        # Leer los keypoints del archivo h5
+        with h5py.File(str(feature_path), 'r') as f:
+            # Obtener los keypoints de ambas imágenes usando read_features
+            feats0 = read_features(feature_path, image1)
+            feats1 = read_features(feature_path, image2)
+            kpts0 = feats0['keypoints']
+            kpts1 = feats1['keypoints']
+
+
+        # Obtener las rutas completas de las imágenes
+        img1_path = self.imgs_dir / image1
+        img2_path = self.imgs_dir / image2
+
+        # Leer las imágenes
+        img1 = cv2.imread(str(img1_path))
+        img2 = cv2.imread(str(img2_path))
+        
+        # Convertir BGR a RGB
+        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+
+        # Obtener solo los keypoints que tienen matches
+        src_pts = kpts0[matches[:, 0]].reshape(-1, 1, 2)
+        dst_pts = kpts1[matches[:, 1]].reshape(-1, 1, 2)
+
+        # Calcular la homografía
+        H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+
+        # Obtener dimensiones
+        h1, w1 = img1.shape[:2]
+        h2, w2 = img2.shape[:2]
+
+        # Crear la imagen panorámica
+        pts1 = np.float32([[0, 0], [0, h1], [w1, h1], [w1, 0]]).reshape(-1, 1, 2)
+        pts2 = cv2.perspectiveTransform(pts1, H)
+        
+        pts = np.concatenate((pts2, np.float32([[0, 0], [0, h2], [w2, h2], [w2, 0]]).reshape(-1, 1, 2)))
+        
+        [xmin, ymin] = np.int32(pts.min(axis=0).ravel() - 0.5)
+        [xmax, ymax] = np.int32(pts.max(axis=0).ravel() + 0.5)
+        
+        t = [-xmin, -ymin]
+        Ht = np.array([[1, 0, t[0]], [0, 1, t[1]], [0, 0, 1]])
+
+        # Crear el resultado
+        result = cv2.warpPerspective(img1, Ht.dot(H), (xmax-xmin, ymax-ymin))
+        result[t[1]:h2+t[1], t[0]:w2+t[0]] = img2
+
+        return result
+    """
+    
     def rotate_back_features(self, feature_path: Path) -> None:
         """
         Rotates back the features.

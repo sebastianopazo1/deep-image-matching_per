@@ -22,8 +22,6 @@ dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
-    "torch",
-    "torchvision",
     "pillow",
     "pandas",
     "opencv-python",

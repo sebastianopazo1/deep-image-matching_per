@@ -8,6 +8,10 @@ from deep_image_matching.io.h5_to_db import export_to_colmap
 from deep_image_matching.io.h5_to_openmvg import export_to_openmvg
 from deep_image_matching.parser import parse_cli
 
+import numpy as np
+import cv2
+from pathlib import Path
+import matplotlib.pyplot as plt
 # Parse arguments from command line
 args = parse_cli()
 
@@ -53,6 +57,16 @@ timer.update("matching")
 if config.general["upright"]:
     img_matching.rotate_back_features(feature_path)
     timer.update("rotate_back_features")
+
+"""
+#agregado por seba
+if not config.general["skip_reconstruction"]:
+    # Hacer el stitching
+    stitched_image = img_matching.stitch_images(feature_path, match_path)
+    # Guardar la imagen
+    cv2.imwrite(str(output_dir / "stitched_result.jpg"), cv2.cvtColor(stitched_image, cv2.COLOR_RGB2BGR))
+#fin agregado por seba
+"""
 
 # Export in colmap format
 with open(config.general["camera_options"], "r") as file:
